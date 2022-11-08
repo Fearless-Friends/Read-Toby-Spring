@@ -398,15 +398,15 @@ PASS
     - 자바의 코드 자체를 추상화해서 접근하도록 만든 것
     - 아래 예시 코드는 name.length()를 리플렉션 방식으로 호출하는 코드다.
 
-[comment]: <> (        ```java)
+        ```java
 
-[comment]: <> (        String name = "Spring";)
+        String name = "Spring";
 
-[comment]: <> (        Method lengthMethod = String.class.getMethod&#40;"length"&#41;;)
+        Method lengthMethod = String.class.getMethod("length");
 
-[comment]: <> (        int length = lengthMethod.invoke&#40;name&#41;; // int length = name.length&#40;&#41;;)
+        int length = lengthMethod.invoke(name); // int length = name.length();
 
-[comment]: <> (        ```)
+        ```
       
 ### 프록시 클래스
 다이나믹 프록시를 이용한 프록시를 만들어보자. 조건은 다음과 같다.
@@ -728,7 +728,7 @@ public class DynamicProxyTest {
 - addAdvice를 통해 여러개의 MethodInterceptor를 추가할 수 있다. 이를 통해 기존 프록시 팩토리 빈의 단점인 부가기능 추가때마다 
 프록시와 프록시 팩토리 빈을 추가해줘야하는 문제를 해결할 수 있다.
   
-####Advice
+###Advice
 MethodInterceptor처럼 타깃 오브젝트에 적용하는 부가기능을 담은 오브젝트를 스프링에서 ```Advice```라고 부른다.
 
 ### 포인트 컷
@@ -741,8 +741,8 @@ MethodInterceptor 오브젝트는 여러 프록시가 공유하기 때문에 타
 MethodInterceptor에는 재사용 가능한 순수 부가기능 제공 코드만 남겨주도록 변경하자. 그러한 구조가 다음 그림이다.
 
 ![img_7.png](images/img_7.png)
-- ####어드바이스: 부가기능을 제공하는 오브젝트
-- ####포인트컷: 메소드 선정 알고리즘을 담은 오브젝트
+- 어드바이스: 부가기능을 제공하는 오브젝트
+- 포인트컷: 메소드 선정 알고리즘을 담은 오브젝트
 - 프록시는 먼저 포인트컷을 통해 부가기능을 부여할 메소드인지 확인한 후 어드바이스를 호출하는 구조를 가지고 있다.
 - 전형적인 템플릿/콜백 구조로 콜백 오브젝트와 메소드 호출정보를  제외한 나머지는 재사용 가능한 기능으로 만들어 사용한다.
 - 실제 사용시에는 포인트컷과 어드바이스를 Advisor로 묶어서 한 번에 추가하도록 한다.
