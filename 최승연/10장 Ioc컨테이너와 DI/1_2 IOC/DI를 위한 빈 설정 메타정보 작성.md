@@ -386,6 +386,9 @@ ex. 빈 등록 메타정보는 XML에 쓰고, 의존관계 주입 메타정보�
     - 빈 등록: @Component 같은 애노테이션
     - 의존관계 설정: @Autowired를 이용한 자동 주입
 
+그렇지만, 지금 국룰적인 의존관계 설정방법은 `@Autowired를 이용한 자동 주입` 중에서도 생성자 주입!
+(https://yaboong.github.io/spring/2019/08/29/why-field-injection-is-bad/)
+
 ## what - 빈 객체가 아닌 일반 값은 어떻게 의존관계 주입하지?
 여기서 말하는 `값`이란?
 - 스프링이 관리하는 빈이 아닌 모든 것!
