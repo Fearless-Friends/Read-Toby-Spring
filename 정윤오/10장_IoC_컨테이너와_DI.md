@@ -1,6 +1,9 @@
 # 목차    
-- [1. IoC 컨테이너와 DI](10.-IoC-컨테이너와-DI)
+- [1. IoC 컨테이너와 DI](1.-IoC-컨테이너와-DI)
     - [1.1 IoC 컨테이너: 빈 팩토리와 애플리케이션 컨텍스트](1.1-IoC-컨테이너:-빈-팩토리와-애플리케이션-컨텍스트)
+    - [1.2 IoC/DI를 위한 빈 설정 메타정보 작성](1.2-IoC-DI를-위한-빈-설정-메타정보-작성)
+    - [1.3 프로토타입과 스코프](1.3-프로토타입과-스코프)
+    - [1.4 기타 빈 설정 메타정보](1.4-기타-빈-설정-메타정보)
 
 <BR>
 
@@ -113,3 +116,162 @@ XML이 아닌 JAVA Code의 관점에서 보면 아래와 같다.
 
 아래 두개는 타입이 아니라 이름을 통해 접근 가능하다.        
 
+<BR>
+
+# **1.3 프로토타입과 스코프**
+기본적으로 스프링 Bean은 싱글톤으로 만들어짐        
+그러나 프로토타입 스코프로 빈을 선언하면, 컨테이너에게 빈을 요청할 때 마다 매번 새로운 오브젝트를 생성하는 형태     
+
+<BR>
+
+## **프로토타입 빈의 용도**
+new로 오브젝트를 생성하는 것을 대신하기 위한 용도.          
+DTO 같은 경우를 의미하는 것이 아니라, 사용자 요청에 따라 매번 독립적인 오브젝트를 만들어야하는데, 매번 새롭게 만들어지는 오브젝트가 컨테이너 내의 빈을 사용해야 하는 경우       
+프로토타입 빈 이용      
+
+하지만 이 방법이 과연 더 편할까? ...        
+그냥 이런 방법도 있다. 정도
+
+<BR>
+
+## **DI와 DL**
+DI(Dependency Injection) : 의존성 주입      
+DL(Dependency Lookup) : 의존성 검색    
+프로토타입 빈 생성은 DL로, DI는 Bean Object가 처음 생성될 때 한 번만 진행되기 때문      
+
+<BR>
+
+## **스코프의 종류**
+- 요청(request)
+- 세션(session)
+- 글로벌세션(globalSession)
+- 애플리케이션(application) 
+
+4개 모두 웹 환경에서만 의미가 있음.     
+
+<BR>
+
+### **요청 스코프 빈**
+하나의 웹 요청 안에서 해당 요청이 끝날 때 제거      
+요청 단위로 생성 및 제거되므로 상태를 가져도 괜찮음     
+
+<BR>
+
+### **(글로벌) 세션 스코프 빈**
+HTTP 세션과 같은 존재 범위를 갖는 빈으로 만들어주는 스코프      
+사용자별로 생성, 브라우저를 닫거나 세션 타임 종료까지 유지         
+
+<Br>
+
+### **애플리케이션 스코프 빈**      
+서블릿 컨텍스트에 저장되는 빈 오브젝트      
+서블릿 컨텍스트는 웹 애플리케이션마다 만들어짐, 따라서 컨텍스트가 존재하는 동안 유지되는 싱글톤 스코프와 비슷한 존재 범위를 가짐.       
+상태를 갖지 않거나, 상태가 있더라도 읽기 전용이거나 하는 등 멀티스레드에서 안전한 환경으로 만들어야함       
+
+<BR>
+
+## **스코프 빈의 사용방법**
+```java
+@Scope("session")
+public class LoginUser {
+    String loginId;
+    String name;
+    Date loginTime;
+    ...
+}
+```
+
+<BR>
+
+# **1.4 기타 빈 설정 메타정보**
+
+### **빈의 식별자**     
+- id
+- name      
+
+위 두가지로 식별할 수 있다.
+id는 유니크한 값, name은 여러 값을 가질 수 있다.        
+
+<BR>
+
+### **애노테이션의 빈 이름**
+@Component와 같은 스테레오 타입의 애노테이션을 부여하고, 빈 스캐너에 의해 자동인식 되도록 만든 경우에는 보통 클래스 이름을 그대로 빈 이름으로 사용하는 방법을 선호한다.     
+```java
+@Component
+public class UserService {...}
+```
+
+물론 지정할 수 있다.        
+```java
+@Component("myUserService")
+public class UserService {...}
+```
+
+@Configuration 내 @Bean 메소드를 이용해 빈을 정의하는 경우도 마찬가지이다.
+```java
+@Configuration
+public class Config {
+    @Bean
+    public void UserDao userDao() {...}
+}
+```
+
+위와 동일하게 지정할 수 있다.
+```java
+@Configuration
+public class Config {
+    @Bean(name={"myUserDao", "userDao"})
+    public void UserDao userDao() {...}
+}
+```
+
+<BR>
+
+## **빈 생명주기 메소드**       
+### **초기화 메소드**   
+Bean Object가 생성되고 DI 작업까지 마친 다음에 실행되는 메소드      
+초기화 메소들르 지정하는 방법은 4가지가 있다.       
+- 초기화 콜백 인터페이스        
+    InitializingBean 인터페이스를 구현해서 빈을 작성하는 방법       
+    프로퍼티 설정을 마친 후에 afterPropertiesSet() 메소드가 호출된다
+
+- init-method 지정      
+    XML을 이용해 빈을 등록한다면 <bean> 태그에 init-method 애트리뷰트를 넣어서 초기화 작업을 수행할 메소드 이름을 지정  
+
+- @PostConstruct            
+    초기화를 담당할 메소드에 @PostConstruct 애노테이션을 부여
+
+- @Bean(init-method)        
+    @Bean 애노테이션의 init-method 엘리먼트를 사용해서 초기화 메소드 지정 가능
+
+ex)
+```java
+@Bean(init-method="initResource")
+public void MyBean myBean() {...};
+```
+
+<BR>
+
+### **제거 메소드**
+컨테이너가 종료될 때 호출해서 빈이 사용한 리소스를 반환하거나 종료 전 처리해야할 작업 수행      
+- 제거 콜백 인터페이스      
+    DisposableBean 인터페이스를 구현해서 destroy()를 구현하는 방법      
+    스프링 API에 종속되는 코드를 만드는 단점이 있음
+
+- destroy-method        
+    <bean> 태그에 destroy-method를 넣어서 제거 메소드 지정
+
+- @PreDestroy       
+    컨테이너가 종료될 때 실행될 메소드에 @PreDestroy를 붙여주면 됨
+
+- @Bean(destroyMethod)
+    @Bean 애노테이션의 destroyMethod 엘리먼트를 이용해서 제거 메소드를 지정할 수 있음       
+
+<BR>
+
+## **팩토리 빈과 팩토리 메소드**
+생성자 대신 오브젝트를 생성해주는 코드의 도움을 받아서 빈 오브젝트를 생성하는 것을 팩토리 빈이라고 부름     
+- FactoryBean Interface         
+- Static Factory Method
+- Instance Factory Method   
+- @Bean 메소드
