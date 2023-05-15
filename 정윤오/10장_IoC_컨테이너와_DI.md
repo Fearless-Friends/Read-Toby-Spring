@@ -275,3 +275,309 @@ public void MyBean myBean() {...};
 - Static Factory Method
 - Instance Factory Method   
 - @Bean 메소드
+
+<BR>
+
+# **1.5 스프링 3.1의 IoC 컨테이너와 DI**
+스프링의 가장 큰 장점 : 버전이 업그레이드 되어도 **과거 기술과 완벽에 가깝게 호환**     
+-> 스프링 3.1에서 2.x나 1.x 방식 (xml 등)을 사용해도 작동한다
+
+스프링 3.1에 아래 2가지 IoC/DI 기술이 새롭게 도입
+- 강화된 자바 코드 빈 설정
+    - XML을 더 이상 사용하지 않아도 됨
+- 런타임 환경 추상화
+
+자바 코드 빈 설정이 강화됐다는데, 어떻게 강화했을까?        
+빈의 종류부터 한 번 보도록 하자
+
+<BR>
+
+### **빈의 종류**
+- **애플리케이션 로직 빈**
+    - 스프링 IoC/DI 컨테이너에 의해 생성되고 관리되는 Bean
+    - 일반적으로 우리가 만드는 Bean들 대부분 해당
+    - DAO, Service, Repository, etc...
+- **애플리케이션 인프라 빈**
+    - 스프링 컨테이너에 등록되긴 하지만 성격이 다른 Bean
+    - 애플리케이션의 로직을 담당하지 않고, 애플리케이션의 로직 빈을 지원하는 형태
+    - DataSource, DataSourceTransactionMananger 등이 해당
+- **컨테이너 인프라 빈**
+    - 스프링 컨테이너에 등록되지만, 애플리케이션 로직을 담고 있지도 않고 다른 애플리케이션 로직을 담은 빈과 관계를 맺고 있지 않는 Bean
+    - DefaultAdvisorAutoProxyCreator 등이 해당 (AOP 지원)
+
+<BR>
+
+## **컨테이너 인프라 빈과 전용 태그**   
+컨테이너 인프라 빈은 <bean> 태그를 이용해 직접 빈을 등록할 수 있음          
+하지만 대부분의 컨테이너 인프라 빈은 스프링 3.1 이전까지 전용 태그를 이용해서 등록했음      
+ex) 전용 태그 예시
+- `<context:component-scan>`
+- `<context:annotation-config>`
+
+전용태그를 추가하면 하나 이상의 빈이 추가로 등록됨          
+@Configuration을 통해 Bean을 등록하는 것 또한       
+`<context:annotation-config>`가 있어야 아래 Bean들이 등록되어 기능이 작동하는 형태      
+- ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+- ConfigurationClassPostProcessor
+- AutowiredAnnotationBeanPostProcessor
+- RequiredAnnotationBeanPostProcessor
+- PersistenceAnnotationBeanPostProcessor
+
+
+
+## **컨테이너 인프라 빈을 위한 자바 코드 메타정보**
+스프링 빈을 역할에 따라 3가지로 구분하려는 이유가 무엇일까?     
+-> 빈 설정 메타정보를 작성하는 방법과 전략을 각각 다르게 가져가기 위함 (이었다)
+
+<BR>
+
+## **IoC/DI 설정 방법의 발전**
+| 버전 | 애플리케이션 로직 빈 | 애플리케이션 인프라 빈 | 애플리케이션 컨테이너 빈 |
+| :---: | :--------------- | :---------------- | :------------------ |
+| 스프링 1.x | `<bean>` | `<bean>` | `<bean>` |
+| 스프링 2.0 | `<bean>` | `<bean>` | 전용태그 |
+| 스프링 2.5 | `<bean>`, 빈 스캔 | `<bean>` | 전용태그 |
+| 스프링 3.0 | `<bean>`, 빈 스캔, 자바 코드 | `<bean>`, 자바 코드 | 전용태그 |
+| 스프링 3.1 | `<bean>`, 빈 스캔, 자바 코드 | `<bean>`, 자바 코드 | `<bean>`, 자바 코드 |
+
+현재 Spring latest release는 6.x.       
+참고 : https://github.com/spring-projects/spring-framework
+
+현재는 그냥 아래와 같이 사용하면 빈 등록이 된다.        
+
+```java
+@Configuration
+@ComponentScan("base.package")
+public class AppConfig {...}
+```
+- 위처럼 base package를 등록하고 하위 패키지의 빈을 스캔하거나      
+- 마커 인터페이스를 지정해서 빈 스캐닝의 기준 페이지를 지정할수도 있다
+- 대부분 base package를 등록한다
+
+<BR>
+
+### **@Import**     
+다른 @Configuration 클래스를 Bean 메타 정보에 추가할 때 사용한다.       
+
+Config를 만들 때 BaseConfig를 작성해놓고 여러 Config(App, Data ...)들에서 공통으로 이용하고자 할때 사용하는 편     
+
+<BR>
+
+### **@ImportResource** 
+XML에서 사용되던 주요한 전용 태그들을 자바 클래스에서 애노테이션과 코드로 대체할 수 있게 해줬지만, 스프링 시큐리티와 같은 서브 프로젝트 등 자주 사용되지 않는 일부 전용 태그는 자바 코드 방식을 지원하지 않는 경우가 있다.      
+이 경우 xml로 작성하고 @ImportResource를 통해 Bean 설정을 가져올 수 있다.
+
+```java
+@Configuration
+@ImportResource("/myproject/config/security.xml")
+public class AppConfig {}
+```
+
+<BR>
+
+### **@EnableXXX**
+전용 태그를 이용할 수 있게 해주는 애노테이션   
+- EnableAsync
+- EnableWebMvc
+- EnableTransactionManagement 
+
+등이 있다.
+
+<BR>
+
+## **웹 애플리케이션의 새로운 IoC 컨테이너 구성**
+웹 환경에서는 보통 루트 애플리케이션 컨텍스트와 서블릿 애플리케이션 컨텍스트로 분리해서 구성하는데, 루트 애플리케이션 컨텍스트는 contextClass 파라미터를 이용하여 아래와 같이 구성이 가능하다.
+
+```xml
+<context-param>
+    <param-name>contextClass<param-name>
+    <param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+</context-param>
+```
+
+@Configuration 클래스는 contextConfigLocation를 통해 지정 가능하다.
+```xml
+    <param-name>contextConfigLocation<param-name>
+    <param-value>myproject.config.AppConfig</param-value>
+```
+
+서블릿 컨테이너도 동일하다.
+
+```xml
+<servlet>
+    ...
+    <param-name>contextConfigLocation<param-name>
+    <param-value>myproject.config.AppConfig</param-value>
+    ...
+</servlet>
+```
+
+**핵심은 위 처럼 작성하는 형태도 가능 하다는 것.**     
+
+<BR>
+
+## **런타임 환경 추상화와 프로파일**
+스프링 3.1에 등장한 또 다른 기술인 런타임 환경 추상화에 대해 알아보자.      
+대부분의 Bean Properties는 바뀌지 않지만, 애플리케이션 동작 환경에 따라 바뀌어야 하는 것들이 있다.          
+-> 대표적으로 외부 리소스나 서버 환경 등       
+
+DB를 생각해보자.        
+운영 환경, 테스트환경, 개발 환경마다 각기 다른 DB를 이용하도록 Bean을 다르게 가져가야 하는 경우가 필요하다.     
+
+<BR>
+
+### **프로퍼티 치환지를 이용한 방법**
+스프링 3.0까지는 이렇게 했다.
+```xml
+<bean id="dataSource" class="...SimpleDriverDataSource">
+    <property name="driverClass" value="${db.driverclass}" />
+    <property name="url" value="${db.url}" />
+    <property name="username" value="${db.username}" />
+    <property name="password" value="${db.password}" />
+</bean>
+```
+
+<BR>
+
+### **런타임 환경 추상화를 이용한 방법**
+```xml
+<beans profile="dev">
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClass" value="${db.driverclass}" />
+        <property name="url" value="${db.url}" />
+        <property name="username" value="${db.username}" />
+        <property name="password" value="${db.password}" />
+    </bean>
+</beans>
+
+<beans profile="spring-test">
+    <jdbc:embedded-database id="dataSource" type="HSQL">
+        <jdbc:script location="schema.sql">
+    </jdbc:embedded-database>
+</beans>
+
+...
+```
+위와 같이 분리가 가능하다.  
+
+<BR>
+
+### **활성 프로파일 지정 방법**
+활성 프로파일을 지정한 후에 로딩하는 방법
+```java
+GenericXmlApplicationContext ac = new GenericXmlApplicationContext();
+ac.getEnvironment().setActiveProfiles("dev");
+ac.load(getClass(), "applicationContext.xml");
+ac.refresh();
+```
+
+커맨드라인 이용
+```shell
+-Dspring.profiles.active=dev
+```
+
+<BR>
+
+### **프로파일 전략**
+1. XML
+```xml
+<context-param>
+    <param-name>spring.profiles.active<param-name>
+    <param-value>dsDev, mockMailserver</param-value>
+</context-param>
+
+...
+
+<beans profile="dev, test">
+```
+
+2. @Profile
+```java
+@Configuration
+@Profile("dev")
+public class DevConfig {...}
+```
+
+3. 중첩 @Configuration 
+```java
+@Configuration
+public class AppConfig {
+
+    @Configuration
+    @Profile("spring-test")
+    public static class SpringTestConfig {...}
+
+    @Configuration
+    @Profile("dev")
+    public static class DevConfig {...}
+
+    @Configuration
+    @Profile("production")
+    public static class ProductionConfig {...}
+}
+```
+
+<BR>
+
+## **프로퍼티 소스**        
+DB 연결정보의 경우 환경에 따라서 달라지게 되는데, 이 값을 직접 읽어와서 지정해줄수도 있다.      
+
+<BR>
+
+### **프로퍼티**
+기본적으로 key-value 쌍을 의미한다
+```yaml
+db.username=spring
+db.password=book
+```
+
+<BR>
+
+### **스프링에서 사용되는 프로퍼티 종류**
+- 환경변수
+    - System.getEnv()
+- 시스템 프로퍼티
+    - System.getProperties()
+- JNDI
+    - WAS에 여러 애플리케이션이 올라가고 그중 하나의 애플리케이션에만 프로퍼티 지정시
+    - <jee:jndi-lookup id="db.username" jndi-name="db.username" />
+- 서플릿 컨텍스트 파라미터
+    - 웹 애플리케이션 레벨의 property
+    - ServletContext Bean을 주입받아 사용
+    - @Autowired ServletContext servletContext;
+- 서블릿 컨픽 파라미터
+    - 개별 서블릿을 위한 설정 값
+    - ServletConfigAware 구현 or @Autowired로 주입
+    - getInitParameter()
+
+위 프로퍼티들은 각각 받아오는 방법이 다르다보니 하나로 통합하고자 하는 니즈가 생겼다.       
+
+<BR>
+
+## **프로파일 통합과 추상화**  
+스프링 3.1에서는 이를 프로퍼티 소스라는 개념으로 추상화하고, 프로퍼티의 저장 위치에 상관없이 동일한 API를 이용해 가져올 수 있게 하였다.     
+Environment 타입의 런타임 오브젝트를 이용하면 일관된 방식으로 프로퍼티 정보를 가져올 수 있다.       
+
+```java
+// Environment Object를 통해 가져오기
+@Autowired
+Environment env;
+
+private String adminEmail;
+
+// 매번 필요한 값이라면? @PostConstruct
+@PostConstruct
+public void init() {
+    this.adminEmail = env.getProperty("admin.email")
+}
+```
+
+위 과정이 번거롭다면 아래와 @Value와 프로퍼티 치환자를 이용할수도 있다.     
+```java
+@Value("${db.username}")
+private String username;
+```
+
+<BR>
+
+------
