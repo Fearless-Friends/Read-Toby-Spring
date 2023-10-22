@@ -3,6 +3,12 @@
     - [4.1 @RequestMapping 핸들러 매핑](4.1-RequestMapping-핸들러-매핑)
     - [4.2 Controller](4.2-Controller)
     - [4.3 모델 바인딩과 검증](4.3-모델-바인딩과-검증)
+    - [4.4 JSP 뷰와 form 태그](4.4-JSP-뷰와-form-태그)
+    - [4.5 메시지 컨버터와 AJAX](4.5-메시지-컨버터와-AJAX)
+    - [4.6 MVC 네임스페이스](4.6-MVC-네임스페이스)
+    - [4.7 MVC 확장 포인트](4.7-MVC-확장-포인트)
+    - [4.8 URL과 리소스 관리](4.8-URL과-리소스-관리)
+    - [4.9 Spring 3.1의 @MVC](4.9-Spring-3.1의-@MVC)
 
 <BR>
 
@@ -513,3 +519,200 @@ MVC 아키텍처에서 정보를 담당히는 컴포넌트.
     - Model Map에 저장된 Model 중에서 지정한 이름과 일치하는 경우 HTTP Session에 저장
 - 뷰의 EL과 스프링 태그 또는 매크로
 
+<BR>
+
+## **4.5 메시지 컨버터와 AJAX**
+메시지 컨버터란?
+- XML이나 JSON을 이용한 AJAX 기능이나 웹 서비스 개발시 사용
+- HTTP Property를 Model Object Property에 Binding하는 대신 RequestBody와 ResponseBody를 통째로 다루는 방식
+
+### **메시지 컨버터의 종류**
+- ByteArrayHttpMessageConverter
+    - byte[] Object 지원
+    - 미디어 타입은 모두 지원
+- StringHttpMessageConverter
+    - String Object 지원
+    - 미디어 타입은 모두 지원
+- FormHttpMessageConverter
+    - 미디어 타입이 application/x-www-form-urlencoded 지원
+    - MultiValueMap<String, String> 형태 Object 지원
+- SourceHttpMessageConverter
+    - 미디어 타입 application/xml, application/*+xml, text/xml 지원
+    - 오브젝트 타입 javax.xml.transform.Source 타입인 DOMSource, SAXSource, StreamSource 지원
+- Jaxb2RootElementHttpMessageConverter
+    - SourcehttpMessageConverter와 동일
+- MarshallingHttpMessageConverter
+    - 스프링 OXM 추상화의 Marshaller와 Unmarshaller를 이용해서 XML 문서와 자바 오브젝트 사이의 변환을 지원
+- MappingJacksonHttpMessageConverter
+    - Jackson ObjectMapper를 이용해서 자바오브젝트와 JSON 변환 지원
+
+<BR>
+
+**AJAX란?**     
+**Asynchronous JavaScript and XML**의 약자      
+자바스크립트를 이용해 서버와 비동기 방식의 통신 수행           
+이름과 달리 JSON 지원       
+
+Json 기반 AJAX를 지원하는 방법
+- MappingJacksonJsonView를 선택
+- @ResponseBody 이용
+
+예제 (GET)
+```java
+// PathVariable을 통해 {} 내 변수 획득
+@RequestMapping(value="checkloginid/{loginId}", method=RequestMethod.GET)
+public Result checkLogin(@PathVariable String loginId) { ... }
+```
+위처럼 Result Object에 결과를 담아서 Json 형태로 내려주기 위해선 위 방법을 적용해야한다     
+
+### **MappingJacksonJsonView**
+```xml
+<bean class=
+"org.springframework.web.servlet.mvc.annotation.AnnotatioαnMethodHandlerAdapter"> 
+    <property name="messageConverters">
+        <list>
+            <bean class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter" /> 
+        </list>
+    </property>
+</bean>
+```
+
+### **ResponseBody**
+```java
+@RequestMapping(value="checkloginid/{loginId}", method=RequestMethod.GET)
+@ResponseBody
+public Result checkLogin(@PathVariable String loginId) { ... }
+```
+
+<BR>
+
+예제 (POST)         
+Json으로 전달되는 요청을 MappingJacksonHttpMessageConverter를 통해 @RequestBody가 붙은 파라미터로 변환
+```java
+@RequestMapping(value="/register", method=RequestMethod.POST) @ResponseBody
+public User registerPost(@RequestBody User user) {
+    // user 검증과 등록 작업 ...
+    return user;
+}
+```
+
+<BR>
+
+## **4.6 MVC 네임스페이스**
+스프링의 기본 @MVC 설정을 적용할 경우 mvc 스키마의 태그를 활용 하면 설정이 간결해지고 편리해짐.     
+
+- <mvc:annotation-driven>
+    - DefaultAnnotationHandlerMapping
+        - @RequestMapping 전략
+    - AnnotationMethodHandlerAdapter
+    - ConfigurableWebBindinglnitializer
+    - 메시지 컨버터
+    - <spring:eval>을 위한 컨버전 서비스 노출용 인터셉터
+    - validator
+    - conversion-service
+- <mvc:interceptors>
+    ```xml
+        // 모두적용
+        <mvc:interceptors>
+            <bean class=" ... Mylnterceptor" />
+        </mvc:interceptors>
+        
+        // 특정 Url Pattern 적용
+        <mvc:interceptors>
+            <mvc:interceptor>
+                <mvc:mapping path="/admin/*"I>
+                <bean class="...Adminlnterceptor">
+                </mvc:interceptor>
+        </mvc:interceptors>
+    ```
+- <mvc:view-controller>
+    - 컨트롤러가 오직 View 지정만 하는 경우 Controller 생성 대신 아래와 같이 설정 가능
+    - <mvc:view-controller path="/" view-name="/index" />
+
+<BR>
+
+## **4.7 MVC 확장 포인트**
+- AnnotationMethodHandlerAdapter
+    - SessionAttributeStore
+        - @SessionAttribute에 의해 지정된 모델이 위 인터페이스를 통해 저장됨
+        - 적절한 setComplete 필요
+        - 고성능 서버에서는 세션 정보 동기화가 더 부담일 수 있음
+    - WebArgumentResolver
+        - 컨트롤러 메소드 파라미터를 확장하고자 할 때 적용
+        ```java
+        public interface WebArgumentResolver {
+            Object UNRESOLVED = new Object();
+            Object resolveArgument(MethodParameter methodParameter,
+            NativeWebRequest webRequest) throws Exception;
+        }
+        ```
+    - ModelAndViewResolver
+        - 컨트롤러 메소드의 리턴 타입과 메소드 정보, 애노테이션 정보 등을 참고해서 ModelAndView를 생성
+        ```java
+        public interface ModelAndViewResolver {
+            ModelAndView UNRESOLVED = new ModelAndView();
+            ModelAndView resolveModelAndView(Method handlerMethod, Class
+            handlerType, Object returnValue, ExtendedModelMap implicitModel, NativeWebRequest webRequest);
+        }
+        ```
+
+<BR>
+
+## **4.8 URL과 리소스 관리**
+URL을 깔끔하게 만들기 위해 DispatcherServlet을 / 에 매핑할 때
+```xml
+<mvc:default-servlet-handler/>
+```
+를 함께 사용           
+
+정적 파일로 구성된 웹 리소스를 손쉽게 모율화해서 사용할 때  
+```xml
+<mvc:resources mapping="/ui/**" location="classpath:/META-INF/webresources/" />
+```
+로 원하는 path 적용
+
+<BR>
+
+## **4.9 Spring 3.1의 @MVC**
+
+### @EnableWebMvc WebMvcConfigurationSupport를 이용한 @MVC 설정
+@Configuration 클래스에 @EnableWebMvc를 붙여주면 <mvc:annotation-config/>을 XML에 넣었을 때와 동일하게 스프링 3.1의 최신 전략 빈이 등록됨       
+
+@EnableWebMvc가 자동으로 등록해주는 @MVC 관련 빈의 설정 자바 코드를 이용해 변경해보자                  
+- 설정자 또는 configurer : @Enable 전용 애노태이션의 설정을 위해 사용되는 빈 
+- @EnableWebMvc의 빈 설정자가 구현해야 할 인터페이스는 WebMvcConfigurer
+- add ~ : 빈이나 새 오브젝트 추가
+- configure ~ : 설정 변경
+- WebMvcConfigurerAdapter를 통해 바꾸고자 하는 함수만 구현도 가능
+```java
+public interface WebMvcConfigurer {
+    void addFormatters(FormatterRegistry registry);
+    void configureMessageConverters(List<HttpMessageConverter<?>> converters); 
+    Validator getValidator();
+    void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers);
+    void addReturnValueHandlers(List<HandlerMethodReturnValueHandler> returnValueHandlers);
+    void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers);
+    void addInterceptors(InterceptorRegistry registry);
+    void addViewControllers(ViewControllerRegistry registry);
+    void addResourceHandlers(ResourceHandlerRegistry registry);
+    void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer);
+}
+```
+
+WebMvcConfigurer 타입 빈은 여러 개 등록도 가능
+```java
+@Configuration
+@EnableWebMvc
+public class WebConfig extends WebMvcConfigurerAdapter {
+    @Bean
+    public WebMvcConfiguer securityConfigurer() {
+        return new SecurityConfigurer();
+    }
+    @Bean
+    public WebMvcConfiguer customerHandlerConfigurer() {
+        return new CustomerHandlerConfigurer();
+    }
+
+    ...
+}
+```
