@@ -130,13 +130,13 @@ No, 클래스를 직접 참조하면서 강한 의존관계를 맺고 있는 경
 - within() : 타입 패턴만을 이용해 조인 포인트 메소드를 선택한다.
     
     ```java
-    @Pointcut(within("com.epril.myproject.dao..*))
+    @Pointcut(within("com.epril.myproject.dao..*"))
     private void daoLayer() {}
     
-    @Pointcut(within("com.epril.myproject.service..*))
+    @Pointcut(within("com.epril.myproject.service..*"))
     private void serviceLayer() {}
     
-    @Pointcut(within("com.epril.myproject.web..*))
+    @Pointcut(within("com.epril.myproject.web..*"))
     private void webLayer() {}
     
     // dao.*는 패키지 밑의 클래스와 인터페이스만
